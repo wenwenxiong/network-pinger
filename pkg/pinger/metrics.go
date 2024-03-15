@@ -53,6 +53,79 @@ var (
 		[]string{
 			"nodeName",
 		})
+	podPingLatencyHistogram = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "pinger_pod_ping_latency_ms",
+			Help:    "The latency ms histogram for pod peer ping",
+			Buckets: []float64{.25, .5, 1, 2, 5, 10, 30},
+		},
+		[]string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_node_name",
+			"target_node_ip",
+			"target_pod_ip",
+		})
+	podPingLostCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pinger_pod_ping_lost_total",
+			Help: "The lost count for pod peer ping",
+		}, []string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_node_name",
+			"target_node_ip",
+			"target_pod_ip",
+		})
+	podPingTotalCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pinger_pod_ping_count_total",
+			Help: "The total count for pod peer ping",
+		}, []string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_node_name",
+			"target_node_ip",
+			"target_pod_ip",
+		})
+	nodePingLatencyHistogram = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "pinger_node_ping_latency_ms",
+			Help:    "The latency ms histogram for pod ping node",
+			Buckets: []float64{.25, .5, 1, 2, 5, 10, 30},
+		},
+		[]string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_node_name",
+			"target_node_ip",
+		})
+	nodePingLostCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pinger_node_ping_lost_total",
+			Help: "The lost count for pod ping node",
+		}, []string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_node_name",
+			"target_node_ip",
+		})
+	nodePingTotalCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pinger_node_ping_count_total",
+			Help: "The total count for pod ping node",
+		}, []string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_node_name",
+			"target_node_ip",
+		})
 )
 
 func InitPingerMetrics() {

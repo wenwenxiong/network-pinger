@@ -82,21 +82,6 @@ func pingPods(config *Configuration) error {
 		for _, podIP := range pod.Status.PodIPs {
 			if util.ContainsString(config.PodProtocols, util.CheckProtocol(podIP.IP)) {
 				func(podIP, podName, nodeIP, nodeName string) {
-					if config.EnableVerboseConnCheck {
-						if err := util.TCPConnectivityCheck(fmt.Sprintf("%s:%d", podIP, config.TCPConnCheckPort)); err != nil {
-							klog.Infof("TCP connectivity to pod %s %s failed", podName, podIP)
-							pingErr = err
-						} else {
-							klog.Infof("TCP connectivity to pod %s %s success", podName, podIP)
-						}
-
-						if err := util.UDPConnectivityCheck(fmt.Sprintf("%s:%d", podIP, config.UDPConnCheckPort)); err != nil {
-							klog.Infof("UDP connectivity to pod %s %s failed", podName, podIP)
-							pingErr = err
-						} else {
-							klog.Infof("UDP connectivity to pod %s %s success", podName, podIP)
-						}
-					}
 
 					pinger, err := goping.NewPinger(podIP)
 					if err != nil {
@@ -151,20 +136,6 @@ func pingNodes(config *Configuration) error {
 		for _, addr := range no.Status.Addresses {
 			if addr.Type == v1.NodeInternalIP && util.ContainsString(config.PodProtocols, util.CheckProtocol(addr.Address)) {
 				func(nodeIP, nodeName string) {
-					if config.EnableVerboseConnCheck {
-						if err := util.TCPConnectivityCheck(fmt.Sprintf("%s:%d", nodeIP, config.TCPConnCheckPort)); err != nil {
-							klog.Infof("TCP connectivity to node %s %s failed", nodeName, nodeIP)
-							pingErr = err
-						} else {
-							klog.Infof("TCP connectivity to node %s %s success", nodeName, nodeIP)
-						}
-						if err := util.UDPConnectivityCheck(fmt.Sprintf("%s:%d", nodeIP, config.UDPConnCheckPort)); err != nil {
-							klog.Infof("UDP connectivity to node %s %s failed", nodeName, nodeIP)
-							pingErr = err
-						} else {
-							klog.Infof("UDP connectivity to node %s %s success", nodeName, nodeIP)
-						}
-					}
 
 					pinger, err := goping.NewPinger(nodeIP)
 					if err != nil {
@@ -220,4 +191,55 @@ func internalNslookup(config *Configuration) error {
 	SetInternalDNSHealthyMetrics(config.NodeName, float64(elapsed)/float64(time.Millisecond))
 	klog.Infof("resolve dns %s to %v in %.2fms", config.InternalDNS, addrs, float64(elapsed)/float64(time.Millisecond))
 	return nil
+}
+
+func SetPodPingMetrics(srcNodeName, srcNodeIP, srcPodIP, targetNodeName, targetNodeIP, targetPodIP string, latency float64, lost, total int) {
+	podPingLatencyHistogram.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetNodeName,
+		targetNodeIP,
+		targetPodIP,
+	).Observe(latency)
+	podPingLostCounter.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetNodeName,
+		targetNodeIP,
+		targetPodIP,
+	).Add(float64(lost))
+	podPingTotalCounter.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetNodeName,
+		targetNodeIP,
+		targetPodIP,
+	).Add(float64(total))
+}
+
+func SetNodePingMetrics(srcNodeName, srcNodeIP, srcPodIP, targetNodeName, targetNodeIP string, latency float64, lost, total int) {
+	nodePingLatencyHistogram.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetNodeName,
+		targetNodeIP,
+	).Observe(latency)
+	nodePingLostCounter.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetNodeName,
+		targetNodeIP,
+	).Add(float64(lost))
+	nodePingTotalCounter.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetNodeName,
+		targetNodeIP,
+	).Add(float64(total))
 }
