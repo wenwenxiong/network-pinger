@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	CmdPinger                = "kube-ovn-pinger"
+	CmdPinger                = "network-pinger"
 )
 
 func main() {
