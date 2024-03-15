@@ -5,6 +5,7 @@ import (
 	"flag"
 	"github.com/spf13/pflag"
 	"github.com/wenwenxiong/network-pinger/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -17,6 +18,7 @@ type Configuration struct {
 	KubeConfigFile     string
 	KubeClient         kubernetes.Interface
 	Port               int
+	DaemonSetNamespace string
 	MatchLabels	       string
 	Interval           int
 	Mode               string
@@ -38,6 +40,7 @@ func ParseFlags() (*Configuration, error) {
 		argPort = pflag.Int("port", 8080, "metrics port")
 
 		argKubeConfigFile     = pflag.String("kubeconfig", "", "Path to kubeconfig file with authorization and master location information. If not set use the inCluster token.")
+		argDaemonSetNameSpace = pflag.String("ds-namespace", "kube-system", "kube-ovn-pinger daemonset namespace")
 		argInterval           = pflag.Int("interval", 5, "interval seconds between consecutive pings")
 		argMode               = pflag.String("mode", "server", "server or job Mode")
 		argExitCode           = pflag.Int("exit-code", 0, "exit code when failure happens")
@@ -70,6 +73,7 @@ func ParseFlags() (*Configuration, error) {
 		KubeConfigFile:     *argKubeConfigFile,
 		KubeClient:         nil,
 		Port:               *argPort,
+		DaemonSetNamespace: *argDaemonSetNameSpace,
 		Interval:           *argInterval,
 		Mode:               *argMode,
 		ExitCode:           *argExitCode,
