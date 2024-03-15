@@ -1,8 +1,14 @@
 package pinger
 
 import (
+	"context"
 	"flag"
+	"github.com/spf13/pflag"
+	"github.com/wenwenxiong/network-pinger/pkg/util"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
 	"os"
 	"time"
 )
