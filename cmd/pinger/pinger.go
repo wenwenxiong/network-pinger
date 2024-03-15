@@ -9,9 +9,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/klog/v2"
 
-	"github.com/xiongwen/network-pinger/pkg/pinger"
-	"github.com/xiongwen/network-pinger/pkg/util"
-	"github.com/xiongwen/network-pinger/versions"
+	"github.com/wenwenxiong/network-pinger/pkg/pinger"
+	"github.com/wenwenxiong/network-pinger/pkg/util"
+	"github.com/wenwenxiong/network-pinger/versions"
 )
 
 func CmdMain() {

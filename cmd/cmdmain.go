@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xiongwen/network-pinger/cmd/pinger"
-	"github.com/xiongwen/network-pinger/pkg/util"
+	"github.com/wenwenxiong/network-pinger/cmd/pinger"
+	"github.com/wenwenxiong/network-pinger/pkg/util"
 )
 
 const (
