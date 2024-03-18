@@ -19,6 +19,7 @@ type Configuration struct {
 	KubeClient         kubernetes.Interface
 	Port               int
 	DaemonSetNamespace string
+	DestNamespace      string
 	MatchLabels	       string
 	Interval           int
 	Mode               string
@@ -40,7 +41,8 @@ func ParseFlags() (*Configuration, error) {
 		argPort = pflag.Int("port", 8080, "metrics port")
 
 		argKubeConfigFile     = pflag.String("kubeconfig", "", "Path to kubeconfig file with authorization and master location information. If not set use the inCluster token.")
-		argDaemonSetNameSpace = pflag.String("ds-namespace", "kube-system", "kube-ovn-pinger daemonset namespace")
+		argDaemonSetNameSpace = pflag.String("ds-namespace", "kube-system", "network-pinger deployment namespace")
+		argDestNameSpace      = pflag.String("dest-namespace", "kube-system", "network-pinger ping pod in dest namespace")
 		argInterval           = pflag.Int("interval", 5, "interval seconds between consecutive pings")
 		argMode               = pflag.String("mode", "server", "server or job Mode")
 		argExitCode           = pflag.Int("exit-code", 0, "exit code when failure happens")
@@ -74,6 +76,7 @@ func ParseFlags() (*Configuration, error) {
 		KubeClient:         nil,
 		Port:               *argPort,
 		DaemonSetNamespace: *argDaemonSetNameSpace,
+		DestNamespace:      *argDestNameSpace
 		Interval:           *argInterval,
 		Mode:               *argMode,
 		ExitCode:           *argExitCode,

@@ -70,7 +70,7 @@ func checkAPIServer(config *Configuration) error {
 
 func pingPods(config *Configuration) error {
 	klog.Infof("start to check pod connectivity")
-	pods, err := config.KubeClient.CoreV1().Pods(config.DaemonSetNamespace).List(context.Background(), metav1.ListOptions{LabelSelector: config.MatchLabels})
+	pods, err := config.KubeClient.CoreV1().Pods(config.DestNamespace).List(context.Background(), metav1.ListOptions{LabelSelector: config.MatchLabels})
 	if err != nil {
 		klog.Errorf("failed to list peer pods: %v", err)
 		return err

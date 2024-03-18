@@ -1,18 +1,17 @@
 ---
-kind: DaemonSet
+kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: network-pinger
   namespace: kube-system
   annotations:
     kubernetes.io/description: |
-      This daemon set launches the pinger daemon.
+      This deployment launches the pinger daemon.
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: network-pinger
-  updateStrategy:
-    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -22,7 +21,6 @@ spec:
     spec:
       priorityClassName: system-node-critical
       serviceAccountName: network-app
-      hostPID: true
       containers:
         - name: pinger
           image: "kubesphere/network-pinger:v1.0.0"
@@ -33,6 +31,7 @@ spec:
             - --alsologtostderr=true
             - --log_file=/var/log/network/network-pinger.log
             - --log_file_max_size=0
+            - --dest-namespace=ns-5gc
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsUser: 0
