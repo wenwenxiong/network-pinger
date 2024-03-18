@@ -1,3 +1,5 @@
 .idea/*
 dist/images/network-pinger
 deployment/network-pinger.tar.xz
+network-pinger.tar.gz
+network-pinger/*
