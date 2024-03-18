@@ -1,0 +1,135 @@
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: network-pinger
+  namespace: kube-system
+  annotations:
+    kubernetes.io/description: |
+      This daemon set launches the pinger daemon.
+spec:
+  selector:
+    matchLabels:
+      app: network-pinger
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: network-pinger
+        component: network
+        type: infra
+    spec:
+      priorityClassName: system-node-critical
+      serviceAccountName: network-app
+      hostPID: true
+      containers:
+        - name: pinger
+          image: "kubesphere/network-pinger:v1.0.0"
+          command:
+            - /network-pinger/network-pinger
+          args:
+            - --logtostderr=false
+            - --alsologtostderr=true
+            - --log_file=/var/log/network/network-pinger.log
+            - --log_file_max_size=0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            privileged: false
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - mountPath: /var/log/network
+              name: network-log
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 200m
+              memory: 400Mi
+      nodeSelector:
+        kubernetes.io/os: "linux"
+      volumes:
+        - name: network-log
+          hostPath:
+            path: /var/log/network
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: network-pinger
+  namespace: kube-system
+  labels:
+    app: network-pinger
+spec:
+  selector:
+    app: network-pinger
+  ports:
+    - port: 8080
+      name: metrics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: network-app
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.k8s.io/system-only: "true"
+  name: system:network-app
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - nodes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - ""
+      - networking.k8s.io
+      - apps
+    resources:
+      - daemonsets
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: network-app
+roleRef:
+  name: system:network-app
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: network-app
+    namespace: kube-system
