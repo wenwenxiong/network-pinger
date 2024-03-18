@@ -13,5 +13,5 @@ build-go:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildmode=pie -o $(CURDIR)/dist/images/network-pinger -ldflags $(GOLDFLAGS) -v ./cmd
 
 .PHONY: image-network-pinger
-image-kube-ovn: build-go
+image-network-pinger: build-go
 	docker buildx build --platform linux/amd64 -t $(REGISTRY)/network-pinger:$(RELEASE_TAG) --build-arg VERSION=$(RELEASE_TAG) -o type=docker -f dist/images/Dockerfile dist/images/
