@@ -76,7 +76,7 @@ func ParseFlags() (*Configuration, error) {
 		KubeClient:         nil,
 		Port:               *argPort,
 		DaemonSetNamespace: *argDaemonSetNameSpace,
-		DestNamespace:      *argDestNameSpace
+		DestNamespace:      *argDestNameSpace,
 		Interval:           *argInterval,
 		Mode:               *argMode,
 		ExitCode:           *argExitCode,
