@@ -136,6 +136,13 @@ func InitPingerMetrics() {
 	prometheus.MustRegister(internalDNSHealthyGauge)
 	prometheus.MustRegister(internalDNSUnhealthyGauge)
 	prometheus.MustRegister(internalDNSRequestLatencyHistogram)
+	prometheus.MustRegister(podPingLatencyHistogram)
+	prometheus.MustRegister(podPingLostCounter)
+	prometheus.MustRegister(podPingTotalCounter)
+	prometheus.MustRegister(nodePingLatencyHistogram)
+	prometheus.MustRegister(nodePingLostCounter)
+	prometheus.MustRegister(nodePingTotalCounter)
+
 }
 
 func SetApiserverUnhealthyMetrics(nodeName string) {
