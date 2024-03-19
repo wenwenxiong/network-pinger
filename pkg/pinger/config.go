@@ -12,11 +12,14 @@ import (
 	"k8s.io/klog/v2"
 	"os"
 	"time"
+
+	networkClientset "pkg/client/clientset/versioned"
 )
 
 type Configuration struct {
 	KubeConfigFile     string
 	KubeClient         kubernetes.Interface
+	NetworkClient      networkClientset.Interface
 	Port               int
 	DaemonSetNamespace string
 	DestNamespace      string
@@ -32,6 +35,7 @@ type Configuration struct {
 	PodIP              string
 	PodProtocols       []string
 	ExternalAddress    string
+	ExternalSubnet     string
 	NetworkMode        string
 	EnableMetrics      bool
 }
@@ -49,6 +53,7 @@ func ParseFlags() (*Configuration, error) {
 		argInternalDNS        = pflag.String("internal-dns", "kubernetes.default", "check dns from pod")
 		argExternalDNS        = pflag.String("external-dns", "", "check external dns resolve from pod")
 		argExternalAddress    = pflag.String("external-address", "", "check ping connection to an external address, default: 114.114.114.114")
+		argExternalSubnet     = pflag.String("external-subnet", "172.18.11.0/24", "check ping connection to an external subnet, default: 172.18.11.0/24")
 
 		argNetworkMode        = pflag.String("network-mode", "kube-ovn", "The cni plugin current cluster used, default: kube-ovn")
 		argEnableMetrics      = pflag.Bool("enable-metrics", true, "Whether to support metrics query")
@@ -74,6 +79,7 @@ func ParseFlags() (*Configuration, error) {
 	config := &Configuration{
 		KubeConfigFile:     *argKubeConfigFile,
 		KubeClient:         nil,
+		NetworkClient:       nil,
 		Port:               *argPort,
 		DaemonSetNamespace: *argDaemonSetNameSpace,
 		DestNamespace:      *argDestNameSpace,
@@ -87,6 +93,7 @@ func ParseFlags() (*Configuration, error) {
 		NodeName:           os.Getenv("NODE_NAME"),
 		PodName:            os.Getenv("POD_NAME"),
 		ExternalAddress:    *argExternalAddress,
+		ExternalSubnet:     *argExternalSubnet,
 		NetworkMode:        *argNetworkMode,
 		EnableMetrics:      *argEnableMetrics,
 	}
@@ -148,10 +155,18 @@ func (config *Configuration) initKubeClient() error {
 	cfg.ContentType = "application/vnd.kubernetes.protobuf"
 	cfg.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 	kubeClient, err := kubernetes.NewForConfig(cfg)
+
 	if err != nil {
 		klog.Errorf("init kubernetes client failed %v", err)
 		return err
 	}
 	config.KubeClient = kubeClient
+
+	networkClient, err := networkClientset.NewForConfig(cfg)
+	if err != nil {
+		klog.Errorf("init network client failed %v", err)
+	}
+	config.NetworkClient = networkClient
+
 	return nil
 }

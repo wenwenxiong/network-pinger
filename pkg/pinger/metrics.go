@@ -126,10 +126,41 @@ var (
 			"target_node_name",
 			"target_node_ip",
 		})
+	IpPingLatencyHistogram = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "pinger_ip_ping_latency_ms",
+			Help:    "The latency ms histogram for ip peer ping",
+			Buckets: []float64{.25, .5, 1, 2, 5, 10, 30},
+		},
+		[]string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_ip",
+		})
+	IpPingLostCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pinger_ip_ping_lost_total",
+			Help: "The lost count for ip peer ping",
+		}, []string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_ip",
+		})
+	IpPingTotalCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pinger_ip_ping_count_total",
+			Help: "The total count for ip peer ping",
+		}, []string{
+			"src_node_name",
+			"src_node_ip",
+			"src_pod_ip",
+			"target_ip",
+		})
 )
 
 func InitPingerMetrics() {
-
 	prometheus.MustRegister(apiserverHealthyGauge)
 	prometheus.MustRegister(apiserverUnhealthyGauge)
 	prometheus.MustRegister(apiserverRequestLatencyHistogram)
@@ -142,6 +173,9 @@ func InitPingerMetrics() {
 	prometheus.MustRegister(nodePingLatencyHistogram)
 	prometheus.MustRegister(nodePingLostCounter)
 	prometheus.MustRegister(nodePingTotalCounter)
+	prometheus.MustRegister(IpPingLatencyHistogram)
+	prometheus.MustRegister(IpPingLostCounter)
+	prometheus.MustRegister(IpPingTotalCounter)
 
 }
 

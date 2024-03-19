@@ -6,11 +6,12 @@ import (
 	goping "github.com/prometheus-community/pro-bing"
 	"github.com/wenwenxiong/network-pinger/pkg/util"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"math"
 	"net"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -47,6 +48,10 @@ func ping(config *Configuration) error {
 		errHappens = true
 	}
 
+	if pingIPs(config) != nil {
+		errHappens = true
+	}
+
 	if errHappens {
 		return fmt.Errorf("ping failed")
 	}
@@ -80,45 +85,103 @@ func pingPods(config *Configuration) error {
 	for _, pod := range pods.Items {
 		for _, podIP := range pod.Status.PodIPs {
 			if util.ContainsString(config.PodProtocols, util.CheckProtocol(podIP.IP)) {
-				func(podIP, podName, nodeIP, nodeName string) {
-
-					pinger, err := goping.NewPinger(podIP)
-					if err != nil {
-						klog.Errorf("failed to init pinger, %v", err)
-						pingErr = err
-						return
-					}
-					pinger.SetPrivileged(true)
-					pinger.Timeout = 1 * time.Second
-					pinger.Debug = true
-					pinger.Count = 3
-					pinger.Interval = 100 * time.Millisecond
-					if err = pinger.Run(); err != nil {
-						klog.Errorf("failed to run pinger for destination %s: %v", podIP, err)
-						pingErr = err
-						return
-					}
-
-					stats := pinger.Statistics()
-					klog.Infof("ping pod: %s %s, count: %d, loss count %d, average rtt %.2fms",
-						podName, podIP, pinger.Count, int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))), float64(stats.AvgRtt)/float64(time.Millisecond))
-					if int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))) != 0 {
-						pingErr = fmt.Errorf("ping failed")
-					}
-					SetPodPingMetrics(
-						config.NodeName,
-						config.HostIP,
-						config.PodName,
-						nodeName,
-						nodeIP,
-						podIP,
-						float64(stats.AvgRtt)/float64(time.Millisecond),
-						int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))),
-						int(float64(stats.PacketsSent)))
-				}(podIP.IP, pod.Name, pod.Status.HostIP, pod.Spec.NodeName)
+				pingErr = pingPod(podIP.IP, pod.Name, pod.Status.HostIP, pod.Spec.NodeName)
 			}
 		}
 	}
+
+	return pingErr
+}
+
+func pingPod( podIP, podName, nodeIP, nodeName string) error {
+	var pingErr error
+	pinger, err := goping.NewPinger(podIP)
+	if err != nil {
+		klog.Errorf("failed to init pinger, %v", err)
+		pingErr = err
+		return pingErr
+	}
+	pinger.SetPrivileged(true)
+	pinger.Timeout = 1 * time.Second
+	pinger.Debug = true
+	pinger.Count = 3
+	pinger.Interval = 100 * time.Millisecond
+	if err = pinger.Run(); err != nil {
+		klog.Errorf("failed to run pinger for destination %s: %v", podIP, err)
+		pingErr = err
+		return pingErr
+	}
+
+	stats := pinger.Statistics()
+	klog.Infof("ping pod: %s %s, count: %d, loss count %d, average rtt %.2fms",
+		podName, podIP, pinger.Count, int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))), float64(stats.AvgRtt)/float64(time.Millisecond))
+	if int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))) != 0 {
+		pingErr = fmt.Errorf("ping failed")
+	}
+	SetPodPingMetrics(
+		config.NodeName,
+		config.HostIP,
+		config.PodName,
+		nodeName,
+		nodeIP,
+		podIP,
+		float64(stats.AvgRtt)/float64(time.Millisecond),
+		int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))),
+		int(float64(stats.PacketsSent)))
+	return pingErr
+}
+
+func pingIPs(config *Configuration) error {
+	klog.Infof("start to check ip connectivity")
+	ipList, err := config.NetworkClient.MecV1().IPs().List(context.TODO(), metaV1.ListOptions{})
+	if err != nil {
+		klog.Errorf("failed to list peer ips: %v", err)
+		return err
+	}
+
+	var pingErr error
+	for _, ip := range ipList.Items {
+		if util.ContainsString(config.PodProtocols, util.CheckProtocol(ip.Spec.V4IPAddress)) && strings.Compare(config.ExternalSubnet,ip.Spec.Subnet)==0{
+			pingErr = pingIP(ip.Spec.V4IPAddress)
+		}
+	}
+
+	return pingErr
+}
+
+func pingIP(IP string) error {
+	var pingErr error
+	pinger, err := goping.NewPinger(IP)
+	if err != nil {
+		klog.Errorf("failed to init pinger, %v", err)
+		pingErr = err
+		return pingErr
+	}
+	pinger.SetPrivileged(true)
+	pinger.Timeout = 1 * time.Second
+	pinger.Debug = true
+	pinger.Count = 3
+	pinger.Interval = 100 * time.Millisecond
+	if err = pinger.Run(); err != nil {
+		klog.Errorf("failed to run pinger for destination %s: %v", podIP, err)
+		pingErr = err
+		return pingErr
+	}
+
+	stats := pinger.Statistics()
+	klog.Infof("ping IP: %s, count: %d, loss count %d, average rtt %.2fms",
+		 IP, pinger.Count, int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))), float64(stats.AvgRtt)/float64(time.Millisecond))
+	if int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))) != 0 {
+		pingErr = fmt.Errorf("ping failed")
+	}
+	SetIPPingMetrics(
+		config.NodeName,
+		config.HostIP,
+		config.PodName,
+		IP,
+		float64(stats.AvgRtt)/float64(time.Millisecond),
+		int(math.Abs(float64(stats.PacketsSent-stats.PacketsRecv))),
+		int(float64(stats.PacketsSent)))
 	return pingErr
 }
 
@@ -216,6 +279,27 @@ func SetPodPingMetrics(srcNodeName, srcNodeIP, srcPodIP, targetNodeName, targetN
 		targetNodeName,
 		targetNodeIP,
 		targetPodIP,
+	).Add(float64(total))
+}
+
+func SetIPPingMetrics(srcNodeName, srcNodeIP, srcPodIP,  targetIP string, latency float64, lost, total int) {
+	IpPingLatencyHistogram.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetIP,
+	).Observe(latency)
+	IpPingLostCounter.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetIP,
+	).Add(float64(lost))
+	IpPingTotalCounter.WithLabelValues(
+		srcNodeName,
+		srcNodeIP,
+		srcPodIP,
+		targetIP,
 	).Add(float64(total))
 }
 
