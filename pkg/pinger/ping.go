@@ -85,7 +85,7 @@ func pingPods(config *Configuration) error {
 	for _, pod := range pods.Items {
 		for _, podIP := range pod.Status.PodIPs {
 			if util.ContainsString(config.PodProtocols, util.CheckProtocol(podIP.IP)) {
-				pingErr = pingPod(podIP.IP, pod.Name, pod.Status.HostIP, pod.Spec.NodeName)
+				pingErr = pingPod(config, podIP.IP, pod.Name, pod.Status.HostIP, pod.Spec.NodeName)
 			}
 		}
 	}
@@ -93,7 +93,7 @@ func pingPods(config *Configuration) error {
 	return pingErr
 }
 
-func pingPod( podIP, podName, nodeIP, nodeName string) error {
+func pingPod( config *Configuration, podIP, podName, nodeIP, nodeName string) error {
 	var pingErr error
 	pinger, err := goping.NewPinger(podIP)
 	if err != nil {
@@ -142,14 +142,14 @@ func pingIPs(config *Configuration) error {
 	var pingErr error
 	for _, ip := range ipList.Items {
 		if util.ContainsString(config.PodProtocols, util.CheckProtocol(ip.Spec.V4IPAddress)) && strings.Compare(config.ExternalSubnet,ip.Spec.Subnet)==0{
-			pingErr = pingIP(ip.Spec.V4IPAddress)
+			pingErr = pingIP(config, ip.Spec.V4IPAddress)
 		}
 	}
 
 	return pingErr
 }
 
-func pingIP(IP string) error {
+func pingIP(config *Configuration, IP string) error {
 	var pingErr error
 	pinger, err := goping.NewPinger(IP)
 	if err != nil {
